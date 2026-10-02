@@ -10,6 +10,7 @@ export interface LatLon {
 export interface Fix extends LatLon {
   accuracy: number; // metres, ~68% radius as reported by the browser
   timestamp: number;
+  samples?: number; // how many raw fixes were averaged into this one
 }
 
 export interface Observation extends LatLon {

@@ -41,6 +41,8 @@ export function observationLayer(o: Observation, layer: MapLayer, lengthM: numbe
   const { core, halo } = rayColors(layer);
   const path = rayPath(o, o.bearing, lengthM).map(ll);
   const g = L.layerGroup();
+  // Where the observer may actually have stood (reported GPS error).
+  if (o.accuracy) L.circle(ll(o), { radius: o.accuracy, color: core, weight: 1, opacity: 0.5, dashArray: '3 3', fillOpacity: 0.06, interactive: false }).addTo(g);
   L.polyline(path, { color: halo, weight: 7, opacity: 0.8, interactive: false, lineCap: 'butt' }).addTo(g);
   L.polyline(path, { color: core, weight: 2.5, opacity: 1, interactive: false, lineCap: 'butt' }).addTo(g);
 

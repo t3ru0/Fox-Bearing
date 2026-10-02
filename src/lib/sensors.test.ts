@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getCurrentFix, watchFix, GeoError } from './geolocation';
+import { averageFixes, getCurrentFix, watchFix, GeoError } from './geolocation';
+import { destinationPoint, distanceM } from './bearing';
 import { detectOrientationSupport, headingFromEvent, needsPermission, smoothHeading, turnInstruction } from './compass';
 
 const failingGeo = (code: number) => ({
@@ -82,5 +83,38 @@ describe('device orientation', () => {
     expect(turnInstruction(62, 118).text).toBe('TURN RIGHT 56°');
     expect(turnInstruction(10, 350).text).toBe('TURN LEFT 20°');
     expect(turnInstruction(60, 62).text).toBe('ON BEARING');
+  });
+});
+
+
+describe('GPS averaging for a marked point', () => {
+  const truth = { lat: 18.5204, lon: 73.8567 };
+  const at = (b: number, d: number, accuracy: number, timestamp: number) => ({ ...destinationPoint(truth, b, d), accuracy, timestamp });
+
+  it('averages jitter around the true spot', () => {
+    const now = 100_000;
+    const jitter = [[0, 6], [90, 5], [180, 6], [270, 5], [45, 4], [225, 4]].map(([b, d], i) => at(b, d, 5, now - 6000 + i * 1000));
+    const avg = averageFixes(jitter, now)!;
+    expect(distanceM(avg, truth)).toBeLessThan(2);
+    expect(Math.max(...jitter.map((j) => distanceM(j, truth)))).toBeGreaterThan(4);
+    expect(avg.samples).toBe(6);
+  });
+
+  it('ignores a coarse network fix and fixes from before the user moved here', () => {
+    const now = 100_000;
+    const samples = [
+      at(0, 300, 10, now - 12_000), // previous spot
+      at(90, 60, 80, now - 5000), // coarse Wi-Fi fix
+      at(0, 2, 6, now - 2000),
+      at(180, 2, 6, now - 1000),
+    ];
+    const avg = averageFixes(samples, now)!;
+    expect(avg.samples).toBe(2);
+    expect(avg.accuracy).toBe(6);
+    expect(distanceM(avg, truth)).toBeLessThan(1.5);
+  });
+
+  it('returns nothing when there are no recent fixes', () => {
+    expect(averageFixes([at(0, 0, 5, 0)], 100_000)).toBeNull();
   });
 });

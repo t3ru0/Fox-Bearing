@@ -1,0 +1,6 @@
+AddType application/manifest+json .webmanifest
+Options -Indexes
+
+<Files "sw.js">
+  Header set Cache-Control "no-cache"
+</Files>

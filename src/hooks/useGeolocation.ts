@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fix } from '../types';
-import { GeoError, getCurrentFix, watchFix } from '../lib/geolocation';
+import { GOOD_GPS_M, GeoError, averageFixes, getCurrentFix, watchFix } from '../lib/geolocation';
 
 export function useGeolocation() {
   const [fix, setFix] = useState<Fix | null>(null);
@@ -11,14 +11,20 @@ export function useGeolocation() {
   // watchPosition long before a fresh getCurrentPosition(maximumAge: 0).
   const waiters = useRef<{ since: number; resolve: (f: Fix) => void }[]>([]);
   const latest = useRef<Fix | null>(null);
+  const samples = useRef<Fix[]>([]);
+
+  const record = (f: Fix) => {
+    latest.current = f;
+    samples.current = [...samples.current.filter((s) => f.timestamp - s.timestamp <= 60_000), f].slice(-120);
+    setFix(f);
+    setError(null);
+  };
 
   useEffect(
     () =>
       watchFix(
         (f) => {
-          latest.current = f;
-          setFix(f);
-          setError(null);
+          record(f);
           waiters.current = waiters.current.filter((w) => (f.timestamp >= w.since ? (w.resolve(f), false) : true));
         },
         setError,
@@ -26,9 +32,9 @@ export function useGeolocation() {
     [attempt],
   );
 
-  const refresh = useCallback(async (): Promise<Fix> => {
-    // A live fix from the last few seconds is as good as a fresh one for a stationary observer.
-    const since = Date.now() - 3000;
+  /** Resolves immediately with the live fix if it is at most `maxAgeMs` old; otherwise waits for a new one. */
+  const refresh = useCallback(async (maxAgeMs = 3000): Promise<Fix> => {
+    const since = Date.now() - maxAgeMs;
     if (latest.current && latest.current.timestamp >= since) return latest.current;
     setLocating(true);
     try {
@@ -36,9 +42,7 @@ export function useGeolocation() {
         getCurrentFix(),
         new Promise<Fix>((resolve) => waiters.current.push({ since, resolve })),
       ]);
-      latest.current = f;
-      setFix(f);
-      setError(null);
+      record(f);
       return f;
     } catch (e) {
       setError(e as GeoError);
@@ -49,6 +53,36 @@ export function useGeolocation() {
     }
   }, []);
 
+  /**
+   * Position to store for a marked point: the average of recent fixes at this spot.
+   * If none is good yet (e.g. only a coarse network fix), waits up to `timeoutMs` for one;
+   * `skip` lets the user accept the best available fix early.
+   */
+  const positionForMark = useCallback(
+    async (opts: { timeoutMs?: number; skip?: Promise<void> } = {}): Promise<Fix> => {
+      const now = () => averageFixes(samples.current, Date.now());
+      const good = () => {
+        const a = now();
+        return a && a.accuracy <= GOOD_GPS_M ? a : null;
+      };
+      const ready = good();
+      if (ready) return ready;
+      refresh(0).catch(() => {}); // nudge the GPS
+      let skipped = false;
+      opts.skip?.then(() => (skipped = true));
+      const deadline = Date.now() + (opts.timeoutMs ?? 12_000);
+      while (Date.now() < deadline && !skipped) {
+        await new Promise((r) => setTimeout(r, 300));
+        const g = good();
+        if (g) return g;
+      }
+      const best = now() ?? averageFixes(samples.current, Date.now(), 120_000);
+      if (best) return best;
+      return refresh(30_000);
+    },
+    [refresh],
+  );
+
   /** Restart the watch, e.g. after the user re-enabled location permission. */
   const retry = useCallback(() => {
     setError(null);
@@ -56,7 +90,7 @@ export function useGeolocation() {
     refresh().catch(() => {});
   }, [refresh]);
 
-  return { fix, error, locating, refresh, retry };
+  return { fix, error, locating, refresh, positionForMark, retry };
 }
 
 export type GeoState = ReturnType<typeof useGeolocation>;

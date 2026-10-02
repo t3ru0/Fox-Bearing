@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Fix, HuntSettings, Observation } from '../types';
 import type { CompassState } from '../hooks/useCompass';
 import type { GeoState } from '../hooks/useGeolocation';
@@ -6,6 +6,7 @@ import { cardinal, formatBearing, formatLat, formatLon, normalizeBearing, parseB
 import { turnInstruction } from '../lib/compass';
 import { accuracyTone, gpsStatus, signed } from '../lib/format';
 import { uid } from '../lib/storage';
+import { GOOD_GPS_M } from '../lib/geolocation';
 import { CompassDial } from './CompassDial';
 import { BearingInput, Note, Pill, StateBlock } from './ui';
 
@@ -40,6 +41,7 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const skipWait = useRef<(() => void) | null>(null);
 
   const sensorDown = UNAVAILABLE.has(compass.status);
   const isManual = wantManual || sensorDown;
@@ -54,13 +56,17 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
     setErr(null);
     setBusy(true);
     try {
+      // Averages the fixes taken at this spot and waits briefly for a good one; the user can skip the wait.
+      const skip = new Promise<void>((r) => (skipWait.current = r));
       let fix: Fix;
       try {
-        fix = await geo.refresh();
+        fix = await geo.positionForMark({ skip });
       } catch (e) {
         const last = geo.fix;
-        if (!last || Date.now() - last.timestamp > 60_000) throw e;
+        if (!last || Date.now() - last.timestamp > 120_000) throw e;
         fix = last;
+      } finally {
+        skipWait.current = null;
       }
       setLocked({ raw, ref, decl, bearing: toTrueBearing(raw, ref, decl), fix, label });
       setPhase('locked');
@@ -141,7 +147,19 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
           <div className="num mt-1 text-sm !font-medium">
             {formatLat(locked.fix.lat)} · {formatLon(locked.fix.lon)}
           </div>
-          <Pill tone={accuracyTone(locked.fix.accuracy)} className="mt-1.5">GPS ±{Math.round(locked.fix.accuracy)} m</Pill>
+          <Pill tone={accuracyTone(locked.fix.accuracy)} className="mt-1.5">
+            GPS ±{Math.round(locked.fix.accuracy)} m{locked.fix.samples && locked.fix.samples > 1 ? ` · avg of ${locked.fix.samples}` : ''}
+          </Pill>
+          {locked.fix.accuracy > GOOD_GPS_M && (
+            <p className="mt-1.5 text-xs font-medium text-danger">
+              Weak GPS: this point may be off by ±{Math.round(locked.fix.accuracy)} m. Re-aim after the GPS settles if you can.
+            </p>
+          )}
+          {Date.now() - locked.fix.timestamp > 30_000 && (
+            <p className="mt-1.5 text-xs font-medium text-danger">
+              GPS fix is {Math.round((Date.now() - locked.fix.timestamp) / 1000)} s old — fine if you have not moved.
+            </p>
+          )}
         </div>
         <details className="rounded-[5px] border border-line bg-raised px-3">
           <summary className="cursor-pointer py-3 text-xs font-semibold tracking-[0.12em] text-ink uppercase">Add RSSI / notes (optional)</summary>
@@ -203,8 +221,9 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
           <p className="text-center text-xs font-semibold tracking-[0.12em] text-ink">000° N · 090° E · 180° S · 270° W</p>
           {err && <Note tone="warn">{err}</Note>}
           <button className="btn btn-primary h-16 text-base" onClick={saveManual} disabled={busy}>
-            {busy ? 'Getting GPS…' : `Lock bearing · point ${label}`}
+            {busy ? `Improving GPS… ${geo.fix ? `±${Math.round(geo.fix.accuracy)} m` : ''}` : `Lock bearing · point ${label}`}
           </button>
+          {busy && <button className="btn btn-ghost" onClick={() => skipWait.current?.()}>Use current fix</button>}
           {!sensorDown && <button className="btn" onClick={() => setWantManual(false)}>Use phone compass</button>}
           {compass.status === 'denied' && <button className="btn" onClick={compass.start}>Retry compass permission</button>}
         </>
@@ -225,8 +244,14 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
           {compass.status === 'waiting' && <p className="text-center text-sm text-ink max-lg:landscape:col-start-2">Waiting for compass… hold the phone flat, away from metal.</p>}
           {err && <div className="max-lg:landscape:col-start-2"><Note tone="warn">{err}</Note></div>}
           <button className="btn btn-primary h-16 text-base max-lg:landscape:col-start-2" onClick={lockCompass} disabled={!live || busy}>
-            {busy ? 'Getting GPS…' : live ? `Lock bearing ${formatBearing(Math.round(trueHeading!))}` : 'Lock bearing'}
+            {busy ? `Improving GPS… ${geo.fix ? `±${Math.round(geo.fix.accuracy)} m` : ''}` : live ? `Lock bearing ${formatBearing(Math.round(trueHeading!))}` : 'Lock bearing'}
           </button>
+          {busy && (
+            <div className="flex items-center justify-between gap-2 max-lg:landscape:col-start-2">
+              <span className="text-xs text-ink">Bearing captured. Waiting for GPS ≤ ±{GOOD_GPS_M} m — stand still.</span>
+              <button className="btn btn-ghost shrink-0" onClick={() => skipWait.current?.()}>Use current fix</button>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 max-lg:landscape:col-start-2">
             <span className="text-xs text-ink">
               {compass.reading?.accuracyDeg != null ? `Sensor ±${Math.round(compass.reading.accuracyDeg)}°` : 'Phone compass · accuracy unknown'}

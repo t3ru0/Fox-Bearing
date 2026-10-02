@@ -5,6 +5,8 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Set BASE=/sub/path/ to host under a sub-directory (e.g. Apache htdocs/foxhunt).
+  base: process.env.BASE ?? '/',
   plugins: [
     react(),
     tailwindcss(),
@@ -14,22 +16,18 @@ export default defineConfig({
       manifest: {
         name: 'Fox Hunt Mapper',
         short_name: 'Fox Mapper',
-        id: '/',
         description: 'Plot Yagi bearings and triangulate the fox transmitter.',
-        start_url: '/',
-        scope: '/',
         display: 'standalone',
         background_color: '#F1EEE5',
         theme_color: '#FFFFFF',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallback: '/index.html',
         runtimeCaching: [
           {
             // Fonts: cache after first load so the shell renders offline.
