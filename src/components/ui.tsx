@@ -1,15 +1,21 @@
 import type { ReactNode } from 'react';
 import { normalizeBearing, parseBearing } from '../lib/bearing';
-import { type Tone, rssiStrength, dbm } from '../lib/format';
+import { type Tone, rssiStrength, dbm, sentence } from '../lib/format';
 
+/** iOS large title (apple.com display-md: 34 / 600 / tight). */
+export function LargeTitle({ children }: { children: ReactNode }) {
+  return <h2 className="px-4 pt-1 text-[34px] leading-[1.15] font-semibold tracking-[-0.011em]">{children}</h2>;
+}
+
+/** iOS grouped section: a quiet title above a rounded card. */
 export function Section({ title, aside, children, className = '' }: { title: string; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`card p-4 ${className}`}>
-      <header className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-2.5">
-        <h2 className="eyebrow !text-[11px] !text-ink-strong">{title}</h2>
+    <section className={className}>
+      <header className="mb-1.5 flex items-center justify-between gap-3 px-4">
+        <h2 className="eyebrow">{title}</h2>
         {aside}
       </header>
-      {children}
+      <div className="card p-4">{children}</div>
     </section>
   );
 }
@@ -20,16 +26,16 @@ export function Stat({ label, value, sub, size = 'md' }: { label: string; value:
     <div className="min-w-0">
       <div className="eyebrow">{label}</div>
       <div className={`num ${cls} mt-0.5 truncate leading-tight`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs font-medium text-ink">{sub}</div>}
+      {sub && <div className="mt-0.5 text-[13px] text-ink">{sub}</div>}
     </div>
   );
 }
 
 export function Note({ children, tone = 'muted' }: { children: ReactNode; tone?: 'muted' | 'warn' }) {
-  return (
-    <p className={`text-[13px] leading-relaxed ${tone === 'warn' ? 'border-l-2 border-danger pl-2.5 font-medium text-danger' : 'text-ink'}`}>
-      {children}
-    </p>
+  return tone === 'warn' ? (
+    <p className="rounded-xl bg-danger/10 px-3 py-2 text-[14px] leading-[1.43] font-semibold text-danger">{children}</p>
+  ) : (
+    <p className="text-[14px] leading-[1.43] text-ink">{children}</p>
   );
 }
 
@@ -47,9 +53,9 @@ export function Pill({ tone, children, className = '' }: { tone: Tone; children:
 /** Empty / error state block. */
 export function StateBlock({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="rounded-[5px] border border-dashed border-line-strong bg-raised px-4 py-4">
-      <div className="num text-sm tracking-[0.12em] uppercase">{title}</div>
-      <div className="mt-1.5 text-sm leading-relaxed text-ink">{children}</div>
+    <div className="rounded-2xl bg-raised px-4 py-3.5">
+      <div className="text-[15px] font-semibold text-ink-strong">{title}</div>
+      <div className="mt-1 text-[14px] leading-[1.43] text-ink">{children}</div>
       {action && <div className="mt-3">{action}</div>}
     </div>
   );
@@ -62,15 +68,15 @@ export function SignalBar({ rssi }: { rssi: number }) {
       <div className="num text-base leading-tight">{dbm(rssi)}</div>
       <div className="mt-1 flex gap-[2px]" aria-hidden>
         {Array.from({ length: 10 }, (_, i) => (
-          <span key={i} className={`h-2 w-[5px] rounded-[1px] ${i < bars ? 'bg-ink-strong' : 'bg-line'}`} />
+          <span key={i} className={`h-2 w-[5px] rounded-full ${i < bars ? 'bg-ink-strong' : 'bg-line'}`} />
         ))}
       </div>
-      <div className="mt-0.5 text-[10px] font-semibold tracking-[0.14em] text-ink">{label}</div>
+      <div className="mt-0.5 text-[12px] font-semibold text-ink">{sentence(label)}</div>
     </div>
   );
 }
 
-/** Big instrument-style bearing entry with −/+ steppers. Value is a string so the user can type freely. */
+/** Big bearing entry with −/+ steppers. Value is a string so the user can type freely. */
 export function BearingInput({
   value,
   onChange,
@@ -132,6 +138,8 @@ const paths = {
   fit: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
   fox: 'M12 4l6 8-6 8-6-8 6-8Z',
   field: 'M5 12h3l2-6 4 12 2-6h3',
+  chevron: 'M9 6l6 6-6 6',
+  close: 'M6 6l12 12M18 6 6 18',
 } as const;
 
 export function Icon({ name, className = 'h-5 w-5' }: { name: keyof typeof paths; className?: string }) {

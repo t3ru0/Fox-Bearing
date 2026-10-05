@@ -1,6 +1,6 @@
 import type { Fix, TriangulationResult } from '../types';
 import { cardinal, distanceM, formatBearing, formatDistance, formatLat, formatLon, initialBearing } from '../lib/bearing';
-import { CONF_TONE, SHORT_REASON, confidence, estimateTitle } from '../lib/format';
+import { CONF_TONE, SHORT_REASON, confidence, estimateTitle, sentence } from '../lib/format';
 import { Note, Pill, Section, StateBlock, Stat } from './ui';
 
 interface Props {
@@ -16,7 +16,7 @@ export function EstimatePanel({ result, count, fix, bearingErrorDeg, onShowOnMap
     const [title] = SHORT_REASON[result.code];
     return (
       <Section title="Fox estimate">
-        <StateBlock title={title}>{result.reason}</StateBlock>
+        <StateBlock title={sentence(title)}>{result.reason}</StateBlock>
       </Section>
     );
   }
@@ -24,7 +24,7 @@ export function EstimatePanel({ result, count, fix, bearingErrorDeg, onShowOnMap
   const conf = confidence(e, count);
   const fromMe = fix && { d: distanceM(fix, e), b: initialBearing(fix, e) };
   return (
-    <Section title="Fox estimate" aside={<Pill tone={CONF_TONE[conf]}>{conf} confidence</Pill>}>
+    <Section title="Fox estimate" aside={<Pill tone={CONF_TONE[conf]}>{sentence(conf)} confidence</Pill>}>
       {conf === 'LOW' && (
         <div className="mb-3">
           <StateBlock title="Low confidence">
@@ -40,13 +40,13 @@ export function EstimatePanel({ result, count, fix, bearingErrorDeg, onShowOnMap
         <br />
         {formatLon(e.lon)}
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-3 border-t border-line pt-3">
+      <div className="mt-3 grid grid-cols-3 gap-3 border-t border-line/60 pt-3">
         <Stat label="Est. accuracy" value={`±${formatDistance(e.ellipse.semiMajorM)}`} sub={`95% · ×${formatDistance(e.ellipse.semiMinorM)}`} />
         <Stat label="Bearings used" value={String(count).padStart(2, '0')} sub={`RMS off ${e.rmsResidualDeg.toFixed(1)}°`} />
         <Stat label="Crossing" value={`${e.maxCrossingDeg.toFixed(0)}°`} sub="90° ideal" />
       </div>
       {fromMe && (
-        <div className="mt-3 grid grid-cols-2 gap-3 border-t border-line pt-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 border-t border-line/60 pt-3">
           <Stat label="From you" value={formatDistance(fromMe.d)} size="lg" />
           <Stat label="Head" value={formatBearing(fromMe.b)} sub={`${cardinal(fromMe.b)} · true`} size="lg" />
         </div>

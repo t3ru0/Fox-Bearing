@@ -34,7 +34,7 @@ export function CompassDial({ heading, target, size = 320 }: { heading: number |
               textAnchor="middle"
               dominantBaseline="central"
               fontFamily="var(--font-display)"
-              fontWeight={700}
+              fontWeight={600}
               fontSize={i % 2 ? 12 : 19}
               fill={c === 'N' ? 'var(--accent)' : 'var(--ink-strong)'}
             >
@@ -43,7 +43,7 @@ export function CompassDial({ heading, target, size = 320 }: { heading: number |
           ))}
           {target !== null && (
             <g transform={`rotate(${target})`}>
-              <line y1="-78" y2="-28" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4 4" />
+              <line y1="-78" y2="-44" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4 4" />
               <path d="M0 -108 L9 -128 L-9 -128 Z" fill="var(--accent)" stroke="var(--surface)" strokeWidth="1" />
             </g>
           )}
@@ -56,7 +56,7 @@ export function CompassDial({ heading, target, size = 320 }: { heading: number |
         <div className="text-center">
           <div className="eyebrow">Heading</div>
           <div className={`num leading-none ${size < 260 ? 'text-[40px]' : 'text-[56px]'}`}>{heading === null ? '———' : formatBearing(Math.round(heading))}</div>
-          <div className="mt-1 text-xs font-semibold tracking-[0.14em] text-ink">{heading === null ? 'NO DATA' : `${cardinal(heading)} · TRUE`}</div>
+          <div className="mt-1 text-[13px] font-semibold text-ink">{heading === null ? 'No data' : `${cardinal(heading)} · True`}</div>
         </div>
       </div>
     </div>

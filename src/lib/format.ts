@@ -5,6 +5,9 @@ import { SHALLOW_DEG } from './triangulation';
 export const signed = (n: number, digits = 1) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toFixed(digits)}`;
 export const dbm = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n)} dBm`;
 
+/** "SEARCHING" becomes "Searching". Display only; the literals the logic and tests use stay uppercase. */
+export const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
 export type Tone = 'good' | 'fair' | 'poor' | 'off';
 
 export function accuracyTone(m: number): Tone {

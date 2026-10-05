@@ -18,6 +18,7 @@ import { EstimatePanel } from './components/EstimatePanel';
 import { CompassScreen } from './components/CompassScreen';
 import { SettingsScreen, type ThemePref } from './components/SettingsScreen';
 import { FieldMode } from './components/FieldMode';
+import { LargeTitle } from './components/ui';
 
 const THEME_KEY = 'foxhunt.theme';
 const LAYER_KEY = 'foxhunt.layer';
@@ -146,8 +147,8 @@ export default function App() {
         <div className={`${tab === 'map' ? 'flex' : 'hidden'} relative min-h-0 flex-1 lg:flex`}>
           <MapView ref={mapRef} observations={observations} estimate={estimate} fix={geo.fix} headingTrue={headingTrue === null ? null : (Math.round(headingTrue / 5) * 5) % 360} layer={layer} theme={theme} />
           <MapControls map={mapRef} hasFox={!!estimate} onLocate={locate} />
-          <div className="pointer-events-none absolute top-3 left-3 z-[1100] rounded-[4px] border border-line-strong bg-surface px-2 py-1">
-            <span className="text-[10px] font-semibold tracking-[0.12em] text-ink-strong uppercase">
+          <div className="glass pointer-events-none absolute top-3 left-3 z-[1100] rounded-full border border-line/60 px-3 py-1.5">
+            <span className="text-[12px] font-semibold text-ink-strong">
               {observations.length} bearings · {settings.northRef === 'true' ? 'true N' : 'mag → true'} · ±{settings.bearingErrorDeg}°
             </span>
           </div>
@@ -173,8 +174,9 @@ export default function App() {
             />
           )}
           {tab === 'observations' && (
-            <div className="space-y-3 p-3">
-              <button className="btn btn-primary h-14 w-full text-[15px]" onClick={() => openMark()}>Mark point {label}</button>
+            <div className="space-y-5 p-4">
+              <LargeTitle>Observations</LargeTitle>
+              <button className="btn btn-primary h-14 w-full" onClick={() => openMark()}>Mark point {label}</button>
               <EstimatePanel result={result} count={observations.length} fix={geo.fix} bearingErrorDeg={settings.bearingErrorDeg} onShowOnMap={() => showOnMap((m) => m.centerOnFox())} />
               <ObservationList
                 observations={observations}
@@ -250,7 +252,7 @@ export default function App() {
         <div
           key={toast.id}
           role="status"
-          className="toast fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] left-1/2 z-[1300] -translate-x-1/2 rounded-[5px] border border-line-strong bg-ink-strong px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-surface shadow-lg"
+          className="toast fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] left-1/2 z-[1300] -translate-x-1/2 rounded-full bg-ink-strong/90 px-5 py-2.5 text-[15px] font-semibold whitespace-nowrap text-surface shadow-lg backdrop-blur-xl"
         >
           {toast.text}
         </div>

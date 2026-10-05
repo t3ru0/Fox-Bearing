@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Observation } from '../types';
 import { cardinal, formatBearing, formatLat, formatLon } from '../lib/bearing';
 import { signed } from '../lib/format';
-import { Section, SignalBar } from './ui';
+import { Icon, Section, SignalBar } from './ui';
 
 interface Props {
   observations: Observation[];
@@ -17,15 +17,16 @@ interface Props {
 
 export function ObservationList({ observations, residuals, newestId, onShow, onEdit, onRename, onRemeasure, onDelete }: Props) {
   const [open, setOpen] = useState<string | null>(null);
+  const n = observations.length;
   return (
-    <Section title={`${String(observations.length).padStart(2, '0')} observations`}>
-      {observations.length === 0 ? (
-        <p className="py-4 text-center text-sm text-ink">
+    <Section title={`${n} ${n === 1 ? 'observation' : 'observations'}`}>
+      {n === 0 ? (
+        <p className="py-4 text-center text-[15px] text-ink">
           No points yet. Stand still, find the strongest direction with the Yagi, point the phone the same way, then tap{' '}
           <strong className="text-ink-strong">Mark point</strong>.
         </p>
       ) : (
-        <ol className="-mx-4 -mb-4 divide-y divide-line">
+        <ol className="list-inset -m-4 overflow-hidden rounded-2xl">
           {observations.map((o) => {
             const res = residuals?.get(o.id);
             const expanded = open === o.id;
@@ -36,25 +37,25 @@ export function ObservationList({ observations, residuals, newestId, onShow, onE
                   onClick={() => setOpen(expanded ? null : o.id)}
                   aria-expanded={expanded}
                 >
-                  <span className="num grid h-11 min-w-11 place-items-center rounded-[4px] bg-ink-strong px-1.5 text-lg !text-surface">{o.label}</span>
+                  <span className="num grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink-strong text-[17px] !text-surface">{o.label}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="num block text-[32px] leading-none">{formatBearing(o.bearing)}</span>
-                    <span className="mt-0.5 block text-xs font-semibold tracking-[0.12em] text-ink">
-                      {cardinal(o.bearing)} · GPS {o.accuracy === null ? 'MANUAL' : `±${Math.round(o.accuracy)} m`}
+                    <span className="num block text-[28px] leading-none">{formatBearing(o.bearing)}</span>
+                    <span className="mt-1 block text-[13px] text-ink">
+                      {cardinal(o.bearing)} · GPS {o.accuracy === null ? 'manual' : `±${Math.round(o.accuracy)} m`}
                       {o.rssi !== null && ` · ${o.rssi} dBm`}
                     </span>
                   </span>
-                  <span className="text-right">
-                    <time className="num block text-xs !font-medium text-ink">
+                  <span className="flex items-center gap-1.5">
+                    <time className="num text-[13px] !font-normal text-muted">
                       {new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </time>
-                    <span className="mt-1 block text-lg leading-none text-muted" aria-hidden>{expanded ? '−' : '+'}</span>
+                    <Icon name="chevron" className={`h-4 w-4 text-line-strong transition-transform ${expanded ? 'rotate-90' : ''}`} />
                   </span>
                 </button>
 
                 {expanded && (
                   <div className="space-y-3 px-4 pb-4">
-                    <dl className="grid grid-cols-2 gap-x-3 gap-y-3 rounded-[5px] border border-line bg-raised p-3">
+                    <dl className="grid grid-cols-2 gap-x-3 gap-y-3 rounded-2xl bg-raised p-4">
                       <div className="col-span-2">
                         <dt className="eyebrow">GPS coordinates</dt>
                         <dd className="num text-[15px]">{formatLat(o.lat)} · {formatLon(o.lon)}</dd>
@@ -63,9 +64,9 @@ export function ObservationList({ observations, residuals, newestId, onShow, onE
                         <dt className="eyebrow">Bearing</dt>
                         <dd className="num text-[15px]">{formatBearing(o.bearing)} true</dd>
                         {o.northRef === 'magnetic' && o.declination !== 0 && (
-                          <dd className="text-xs text-ink">{formatBearing(o.rawBearing)} mag {signed(o.declination)}°</dd>
+                          <dd className="text-[13px] text-ink">{formatBearing(o.rawBearing)} mag {signed(o.declination)}°</dd>
                         )}
-                        <dd className="text-xs text-ink">{o.accuracy === null ? 'typed manually' : o.northRef === 'magnetic' ? 'phone compass / magnetic' : 'entered vs true north'}</dd>
+                        <dd className="text-[13px] text-ink">{o.accuracy === null ? 'typed manually' : o.northRef === 'magnetic' ? 'phone compass / magnetic' : 'entered vs true north'}</dd>
                       </div>
                       <div>
                         <dt className="eyebrow">GPS accuracy</dt>
@@ -86,16 +87,16 @@ export function ObservationList({ observations, residuals, newestId, onShow, onE
                       {o.notes && (
                         <div className="col-span-2">
                           <dt className="eyebrow">Notes</dt>
-                          <dd className="text-sm text-ink-strong">{o.notes}</dd>
+                          <dd className="text-[15px] text-ink-strong">{o.notes}</dd>
                         </div>
                       )}
                     </dl>
                     <button className="btn w-full" onClick={() => onShow(o)}>Show on map</button>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      <button className="btn btn-ghost" onClick={() => onEdit(o)}>Edit</button>
-                      <button className="btn btn-ghost" onClick={() => onRename(o)}>Rename</button>
-                      <button className="btn btn-ghost !px-1" onClick={() => onRemeasure(o)}>Re-measure</button>
-                      <button className="btn btn-ghost btn-danger" onClick={() => onDelete(o)}>Delete</button>
+                    <div className="flex justify-between [&>button]:text-[14px] [&>button]:whitespace-nowrap">
+                      <button className="btn btn-ghost !px-2" onClick={() => onEdit(o)}>Edit</button>
+                      <button className="btn btn-ghost !px-2" onClick={() => onRename(o)}>Rename</button>
+                      <button className="btn btn-ghost !px-2" onClick={() => onRemeasure(o)}>Re-measure</button>
+                      <button className="btn btn-ghost btn-danger !px-2" onClick={() => onDelete(o)}>Delete</button>
                     </div>
                   </div>
                 )}

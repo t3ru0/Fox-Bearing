@@ -6,7 +6,7 @@ type Props = Omit<ComponentProps<typeof MarkFlow>, 'variant' | 'onCancel'>;
 
 export function CompassScreen(props: Props) {
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-4 p-4">
       <section className="card p-4">
         <MarkFlow variant="screen" {...props} />
       </section>

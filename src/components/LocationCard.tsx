@@ -1,13 +1,13 @@
 import type { GeoState } from '../hooks/useGeolocation';
 import { formatLat, formatLon } from '../lib/bearing';
-import { gpsStatus } from '../lib/format';
+import { gpsStatus, sentence } from '../lib/format';
 import { Note, Pill, Section, Stat } from './ui';
 
 export function LocationCard({ geo }: { geo: GeoState }) {
   const { fix, error, locating, refresh, retry } = geo;
   const s = gpsStatus(fix, error);
   return (
-    <Section title="GPS" aside={<Pill tone={s.tone}>{s.tone === 'off' ? s.text : s.tone.toUpperCase()}</Pill>}>
+    <Section title="GPS" aside={<Pill tone={s.tone}>{sentence(s.tone === 'off' ? s.text : s.tone)}</Pill>}>
       <div className="grid grid-cols-[1fr_auto] items-end gap-4">
         <div className="space-y-2">
           <Stat label="Latitude" value={fix ? formatLat(fix.lat) : '—'} size="sm" />

@@ -11,14 +11,14 @@ const TABS: { id: Tab; label: string; icon: 'map' | 'list' | 'compass' | 'settin
 
 export function BottomNav({ tab, onTab, count }: { tab: Tab; onTab(t: Tab): void; count: number }) {
   return (
-    <nav className="z-[1150] shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]" aria-label="Sections">
+    <nav className="glass tabbar z-[1150] shrink-0 pb-[env(safe-area-inset-bottom)]" aria-label="Sections">
       <div className="grid grid-cols-4">
         {TABS.map((t) => (
           <button key={t.id} className="nav-btn" aria-current={tab === t.id ? 'page' : undefined} onClick={() => onTab(t.id)}>
             <span className="relative">
-              <Icon name={t.icon} className="h-[22px] w-[22px]" />
+              <Icon name={t.icon} className="h-[26px] w-[26px]" />
               {t.id === 'observations' && count > 0 && (
-                <span className="num absolute -top-1.5 -right-3 rounded-[3px] bg-accent px-1 text-[9px] leading-[14px] !text-accent-ink">
+                <span className="num absolute -top-1.5 -right-3.5 min-w-[18px] rounded-full bg-accent px-1.5 text-center text-[11px] leading-[18px] !text-accent-ink">
                   {count}
                 </span>
               )}

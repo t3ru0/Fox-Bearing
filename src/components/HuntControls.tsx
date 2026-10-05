@@ -100,7 +100,7 @@ export function HuntControls({ hunt, onReplace, onRename, onClear }: Props) {
       {saved.length > 0 && (
         <div className="mt-4">
           <div className="eyebrow mb-1.5">Saved hunts</div>
-          <ul className="divide-y divide-line rounded-[5px] border border-line">
+          <ul className="list-inset overflow-hidden rounded-2xl bg-raised">
             {saved.map((h) => (
               <li key={h.id} className="flex items-center gap-2 px-3 py-2">
                 <div className="min-w-0 flex-1">

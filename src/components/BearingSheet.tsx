@@ -111,32 +111,33 @@ export function BearingSheet({ mode, observation: o, settings, defaultLabel, geo
   return (
     <dialog ref={dlg} className="sheet" onClose={onClose} aria-labelledby="sheet-title">
       <form onSubmit={submit} className="flex max-h-[92dvh] flex-col" noValidate>
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-line-strong" aria-hidden />
-        <header className="flex items-center justify-between px-5 pt-2 pb-3">
-          <h2 id="sheet-title" className="eyebrow !text-[12px] !text-ink-strong">{TITLES[mode]}</h2>
-          <button type="button" className="btn btn-ghost !min-h-11" onClick={() => dlg.current?.close()}>Cancel</button>
+        <div className="mx-auto mt-2 h-[5px] w-9 rounded-full bg-line-strong/50" aria-hidden />
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-2 pt-1 pb-2">
+          <button type="button" className="btn btn-ghost justify-self-start" onClick={() => dlg.current?.close()}>Cancel</button>
+          <h2 id="sheet-title" className="text-[17px]">{TITLES[mode]}</h2>
+          <span aria-hidden />
         </header>
 
         <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 pb-4">
           {/* Location */}
-          <section className="rounded-[5px] border border-line bg-raised px-3.5 py-3">
+          <section className="rounded-2xl bg-raised px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="eyebrow">Location</div>
                 <div className="num mt-0.5 text-sm">
-                  {locating && accuracy === null ? 'GPS · SEARCHING' : posOk ? `${pos.lat.toFixed(6)}, ${pos.lon.toFixed(6)}` : 'NO POSITION'}
+                  {locating && accuracy === null ? 'GPS · searching' : posOk ? `${pos.lat.toFixed(6)}, ${pos.lon.toFixed(6)}` : 'No position'}
                 </div>
               </div>
               {accuracy !== null ? (
                 <Pill tone={accuracyTone(accuracy)} className="!h-8 !text-[13px]">
-                  {locating ? 'GPS' : 'GPS FIXED'} ±{Math.round(accuracy)} m
+                  {locating ? 'GPS' : 'GPS fixed'} ±{Math.round(accuracy)} m
                 </Pill>
               ) : (
-                <Pill tone="off" className="!h-8">{locating ? 'SEARCHING' : posOk ? 'MANUAL' : 'NO FIX'}</Pill>
+                <Pill tone="off" className="!h-8">{locating ? 'Searching' : posOk ? 'Manual' : 'No fix'}</Pill>
               )}
             </div>
             <details className="mt-2">
-              <summary className="cursor-pointer py-1.5 text-xs font-semibold tracking-[0.12em] text-ink uppercase">Edit coordinates</summary>
+              <summary className="cursor-pointer py-1.5 text-[15px] font-semibold text-accent">Edit coordinates</summary>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <input className="field" inputMode="decimal" placeholder="Latitude" aria-label="Latitude" value={lat} onChange={(e) => manual(setLat)(e.target.value)} />
                 <input className="field" inputMode="decimal" placeholder="Longitude" aria-label="Longitude" value={lon} onChange={(e) => manual(setLon)(e.target.value)} />
@@ -153,10 +154,10 @@ export function BearingSheet({ mode, observation: o, settings, defaultLabel, geo
           <section>
             <div className="mb-2 flex items-baseline justify-between">
               <span className="eyebrow">Bearing · point {label.trim() || '—'}</span>
-              <span className="text-xs font-semibold tracking-[0.12em] text-ink">{ref === 'true' ? 'TRUE' : 'MAGNETIC'} NORTH</span>
+              <span className="text-[13px] text-ink">{ref === 'true' ? 'True' : 'Magnetic'} north</span>
             </div>
             <BearingInput value={bearing} onChange={setBearing} label="Bearing in degrees" invalid={touched && !pb.ok} autoFocus />
-            <p className="mt-2 text-center text-xs font-semibold tracking-[0.12em] text-ink">0° N · 90° E · 180° S · 270° W · clockwise</p>
+            <p className="mt-2 text-center text-[13px] text-muted">0° N · 90° E · 180° S · 270° W · clockwise</p>
             {compassInRef !== null && (
               <button type="button" className="btn mt-2 w-full" onClick={() => setBearing(compassInRef.toFixed(0))}>
                 Use compass heading {formatBearing(compassInRef)}
@@ -196,8 +197,8 @@ export function BearingSheet({ mode, observation: o, settings, defaultLabel, geo
           </Note>
         </div>
 
-        <footer className="border-t border-line px-5 pt-3 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
-          <button type="submit" className="btn btn-primary h-14 w-full text-[15px]">
+        <footer className="border-t border-line/60 px-5 pt-3 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
+          <button type="submit" className="btn btn-primary h-14 w-full">
             Save observation{trueBearing !== null ? ` · ${formatBearing(trueBearing)}` : ''}
           </button>
         </footer>

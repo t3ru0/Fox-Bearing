@@ -4,7 +4,7 @@ import type { CompassState } from '../hooks/useCompass';
 import type { GeoState } from '../hooks/useGeolocation';
 import { cardinal, formatBearing, formatLat, formatLon, normalizeBearing, parseBearing, toTrueBearing } from '../lib/bearing';
 import { turnInstruction } from '../lib/compass';
-import { accuracyTone, gpsStatus, signed } from '../lib/format';
+import { accuracyTone, gpsStatus, sentence, signed } from '../lib/format';
 import { uid } from '../lib/storage';
 import { GOOD_GPS_M } from '../lib/geolocation';
 import { CompassDial } from './CompassDial';
@@ -122,12 +122,12 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
   if (phase === 'saved' && locked) {
     return (
       <div className="flex flex-col items-center gap-3 py-4 text-center">
-        <Pill tone="good" className="!h-8 !text-[13px]">POINT {locked.label} SAVED</Pill>
+        <Pill tone="good" className="!h-8 !text-[13px]">Point {locked.label} saved</Pill>
         <div className="num text-[72px] leading-none">{formatBearing(locked.bearing)}</div>
-        <div className="text-sm font-semibold tracking-[0.14em] text-ink">{cardinal(locked.bearing)} · RAY DRAWN</div>
+        <div className="text-[15px] font-semibold text-ink">{cardinal(locked.bearing)} · Ray drawn</div>
         <div className="mt-2 grid w-full gap-2">
-          <button className="btn btn-primary h-16 text-base" onClick={next}>Move to next point</button>
-          {onViewMap && <button className="btn h-14" onClick={onViewMap}>View map</button>}
+          <button className="btn btn-primary h-14" onClick={next}>Move to next point</button>
+          {onViewMap && <button className="btn h-12" onClick={onViewMap}>View map</button>}
         </div>
       </div>
     );
@@ -138,12 +138,12 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
     return (
       <div className="flex flex-col gap-3">
         <div className="text-center">
-          <Pill tone="good" className="!h-8 !text-[13px]">BEARING LOCKED</Pill>
+          <Pill tone="good" className="!h-8 !text-[13px]">Bearing locked</Pill>
           <div className={`num mt-2 leading-none ${big ? 'text-[80px]' : 'text-[64px]'}`}>{formatBearing(locked.bearing)}</div>
-          <div className="mt-1 text-sm font-semibold tracking-[0.14em] text-ink">
-            {cardinal(locked.bearing)} · TRUE{locked.ref === 'magnetic' && locked.decl !== 0 ? ` (${formatBearing(locked.raw)} mag ${signed(locked.decl)}°)` : ''}
+          <div className="mt-1 text-[15px] font-semibold text-ink">
+            {cardinal(locked.bearing)} · True{locked.ref === 'magnetic' && locked.decl !== 0 ? ` (${formatBearing(locked.raw)} mag ${signed(locked.decl)}°)` : ''}
           </div>
-          <div className="num mt-3 text-2xl">POINT {locked.label}</div>
+          <div className="num mt-3 text-2xl">Point {locked.label}</div>
           <div className="num mt-1 text-sm !font-medium">
             {formatLat(locked.fix.lat)} · {formatLon(locked.fix.lon)}
           </div>
@@ -161,8 +161,8 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
             </p>
           )}
         </div>
-        <details className="rounded-[5px] border border-line bg-raised px-3">
-          <summary className="cursor-pointer py-3 text-xs font-semibold tracking-[0.12em] text-ink uppercase">Add RSSI / notes (optional)</summary>
+        <details className="rounded-2xl bg-raised px-4">
+          <summary className="cursor-pointer py-3 text-[15px] font-semibold text-accent">Add RSSI / notes (optional)</summary>
           <div className="grid gap-2 pb-3">
             <label className="block">
               <span className="eyebrow">RSSI · typed manually</span>
@@ -180,8 +180,8 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
         </details>
         {err && <Note tone="warn">{err}</Note>}
         <div className="grid grid-cols-[auto_1fr] gap-2">
-          <button className="btn h-16 px-4" onClick={next}>Re-aim</button>
-          <button className="btn btn-primary h-16 text-base" onClick={() => save(locked)}>Save point {locked.label}</button>
+          <button className="btn h-14 px-5" onClick={next}>Re-aim</button>
+          <button className="btn btn-primary h-14" onClick={() => save(locked)}>Save point {locked.label}</button>
         </div>
       </div>
     );
@@ -191,12 +191,12 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
   const turn = live && trueHeading !== null && target !== null ? turnInstruction(trueHeading, target) : null;
   return (
     <div className={`flex flex-col gap-3 ${isManual ? '' : 'max-lg:landscape:grid max-lg:landscape:grid-cols-2 max-lg:landscape:items-start max-lg:landscape:gap-x-5'}`}>
-      <div className="flex items-center justify-between gap-2 rounded-[5px] border border-line bg-raised px-3 py-2 max-lg:landscape:col-start-2">
+      <div className="flex items-center justify-between gap-2 rounded-2xl bg-raised px-4 py-2.5 max-lg:landscape:col-start-2">
         <div className="min-w-0">
           <div className="eyebrow">Point {label} · position</div>
-          <div className="num truncate text-sm !font-medium">{geo.fix ? `${geo.fix.lat.toFixed(6)}, ${geo.fix.lon.toFixed(6)}` : 'Waiting for GPS…'}</div>
+          <div className="num truncate text-[15px] !font-normal">{geo.fix ? `${geo.fix.lat.toFixed(6)}, ${geo.fix.lon.toFixed(6)}` : 'Waiting for GPS…'}</div>
         </div>
-        <Pill tone={gps.tone}>GPS {gps.text}</Pill>
+        <Pill tone={gps.tone}>GPS {sentence(gps.text)}</Pill>
       </div>
 
       {isManual ? (
@@ -215,12 +215,12 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
           )}
           <div className="flex items-baseline justify-between">
             <span className="eyebrow">Bearing</span>
-            <span className="text-xs font-semibold tracking-[0.12em] text-ink">FROM {settings.northRef === 'true' ? 'TRUE' : 'MAGNETIC'} NORTH</span>
+            <span className="text-[13px] text-ink">From {settings.northRef === 'true' ? 'true' : 'magnetic'} north</span>
           </div>
           <BearingInput value={manual} onChange={(v) => { setManual(v); setErr(null); }} label="Bearing in degrees" size={big ? 'lg' : 'md'} />
-          <p className="text-center text-xs font-semibold tracking-[0.12em] text-ink">000° N · 090° E · 180° S · 270° W</p>
+          <p className="text-center text-[13px] text-muted">000° N · 090° E · 180° S · 270° W</p>
           {err && <Note tone="warn">{err}</Note>}
-          <button className="btn btn-primary h-16 text-base" onClick={saveManual} disabled={busy}>
+          <button className="btn btn-primary h-14" onClick={saveManual} disabled={busy}>
             {busy ? `Improving GPS… ${geo.fix ? `±${Math.round(geo.fix.accuracy)} m` : ''}` : `Lock bearing · point ${label}`}
           </button>
           {busy && <button className="btn btn-ghost" onClick={() => skipWait.current?.()}>Use current fix</button>}
@@ -230,20 +230,20 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
       ) : (
         <>
           <div className="flex flex-col gap-3 max-lg:landscape:col-start-1 max-lg:landscape:row-span-6 max-lg:landscape:row-start-1">
-            <p className="text-center text-[13px] font-semibold tracking-[0.12em] text-ink-strong uppercase">
+            <p className="text-center text-[15px] font-semibold text-ink-strong">
               Point the phone in the same direction as the Yagi
             </p>
             <CompassDial heading={live ? trueHeading : null} target={target} size={variant === 'sheet' ? 220 : 300} />
             {turn && (
-              <p className="text-center text-xs font-semibold tracking-[0.12em] text-ink">
-                FOX EST. {formatBearing(Math.round(target!))} · {turn.text}
+              <p className="text-center text-[13px] font-semibold text-ink">
+                Fox est. {formatBearing(Math.round(target!))} · {sentence(turn.text)}
               </p>
             )}
           </div>
           {compass.status === 'off' && <button className="btn max-lg:landscape:col-start-2" onClick={compass.start}>Start compass</button>}
           {compass.status === 'waiting' && <p className="text-center text-sm text-ink max-lg:landscape:col-start-2">Waiting for compass… hold the phone flat, away from metal.</p>}
           {err && <div className="max-lg:landscape:col-start-2"><Note tone="warn">{err}</Note></div>}
-          <button className="btn btn-primary h-16 text-base max-lg:landscape:col-start-2" onClick={lockCompass} disabled={!live || busy}>
+          <button className="btn btn-primary h-14 max-lg:landscape:col-start-2" onClick={lockCompass} disabled={!live || busy}>
             {busy ? `Improving GPS… ${geo.fix ? `±${Math.round(geo.fix.accuracy)} m` : ''}` : live ? `Lock bearing ${formatBearing(Math.round(trueHeading!))}` : 'Lock bearing'}
           </button>
           {busy && (
@@ -253,11 +253,11 @@ export function MarkFlow({ variant, compass, geo, settings, label, replaceId, ta
             </div>
           )}
           <div className="flex items-center justify-between gap-2 max-lg:landscape:col-start-2">
-            <span className="text-xs text-ink">
+            <span className="text-[13px] text-ink">
               {compass.reading?.accuracyDeg != null ? `Sensor ±${Math.round(compass.reading.accuracyDeg)}°` : 'Phone compass · accuracy unknown'}
               {settings.declination !== 0 && ` · decl ${signed(settings.declination)}°`}
             </span>
-            <button className="btn btn-ghost" onClick={() => setWantManual(true)}>Enter manually</button>
+            <button className="btn btn-ghost shrink-0 whitespace-nowrap" onClick={() => setWantManual(true)}>Enter manually</button>
           </div>
         </>
       )}
