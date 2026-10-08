@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Hunt, HuntSettings, Observation } from '../types';
+import type { Hunt, HuntMode, HuntSettings, Observation } from '../types';
 import { loadCurrent, newHunt, saveCurrent } from '../lib/storage';
 
 export function nextLabel(observations: Observation[]): string {
@@ -11,8 +11,8 @@ export function nextLabel(observations: Observation[]): string {
     }
 }
 
-export function useHunt() {
-  const [hunt, setHunt] = useState<Hunt>(() => loadCurrent() ?? newHunt());
+export function useHunt(mode: HuntMode) {
+  const [hunt, setHunt] = useState<Hunt>(() => loadCurrent(undefined, mode) ?? newHunt(undefined, mode));
 
   useEffect(() => saveCurrent(hunt), [hunt]);
 

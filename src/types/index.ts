@@ -1,6 +1,7 @@
 export type NorthRef = 'true' | 'magnetic';
 export type Theme = 'light' | 'dark';
 export type MapLayer = 'map' | 'satellite';
+export type HuntMode = 'fox' | 'lora';
 
 export interface LatLon {
   lat: number;
@@ -21,6 +22,8 @@ export interface Observation extends LatLon {
   northRef: NorthRef; // reference rawBearing was entered in
   declination: number; // degrees, east positive; applied only when northRef is magnetic
   rssi: number | null;
+  snr: number | null; // dB, typed manually (LoRa mode)
+  frequencyMHz: number | null; // typed manually (LoRa mode)
   notes: string;
   timestamp: number;
   accuracy: number | null;
@@ -34,6 +37,7 @@ export interface HuntSettings {
 
 export interface Hunt {
   version: 1;
+  mode: HuntMode;
   id: string;
   name: string;
   createdAt: number;

@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import type { MapLayer, Observation } from './types';
+import type { Hunt, HuntMode, MapLayer, Observation } from './types';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useCompass } from './hooks/useCompass';
 import { nextLabel, useHunt } from './hooks/useHunt';
 import { formatBearing, initialBearing, normalizeBearing } from './lib/bearing';
 import { needsPermission } from './lib/compass';
 import { triangulate } from './lib/triangulation';
+import { saveCurrent } from './lib/storage';
 import { MapView, type MapHandle } from './components/MapView';
 import { MapControls } from './components/MapControls';
 import { TopBar } from './components/TopBar';
@@ -22,6 +23,7 @@ import { LargeTitle } from './components/ui';
 
 const THEME_KEY = 'foxhunt.theme';
 const LAYER_KEY = 'foxhunt.layer';
+const MODE_KEY = 'foxhunt.mode';
 
 function readPref<T extends string>(key: string, allowed: T[], fallback: T): T {
   try {
@@ -53,11 +55,35 @@ const subscribeDark = (cb: () => void) => {
   return () => darkQuery.removeEventListener('change', cb);
 };
 
+/** Each mode is a separate app state: switching remounts the whole screen so it loads that mode's hunt. */
 export default function App() {
+  const [mode, setMode] = useState<HuntMode>(() => readPref(MODE_KEY, ['fox', 'lora'], 'fox'));
+  return (
+    <HuntApp
+      key={mode}
+      mode={mode}
+      onMode={(m) => {
+        writePref(MODE_KEY, m);
+        setMode(m);
+      }}
+    />
+  );
+}
+
+function HuntApp({ mode, onMode }: { mode: HuntMode; onMode(m: HuntMode): void }) {
   const geo = useGeolocation();
   const compass = useCompass();
-  const { hunt, replaceHunt, addObservation, updateObservation, deleteObservation, setSettings, rename, clear } = useHunt();
+  const { hunt, replaceHunt, addObservation, updateObservation, deleteObservation, setSettings, rename, clear } = useHunt(mode);
   const { observations, settings } = hunt;
+
+  // A hunt from another mode (imported or saved) is stored under its own mode and then opened there.
+  const loadHunt = (h: Hunt) => {
+    if (h.mode === mode) replaceHunt(h);
+    else {
+      saveCurrent(h);
+      onMode(h.mode);
+    }
+  };
 
   const [tab, setTab] = useState<Tab>('map');
   const [field, setField] = useState(false);
@@ -138,7 +164,7 @@ export default function App() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <TopBar fix={geo.fix} error={geo.error} online={online} onField={() => {
+      <TopBar mode={mode} fix={geo.fix} error={geo.error} online={online} onField={() => {
           ensureCompass();
           setField(true);
         }} />
@@ -199,7 +225,7 @@ export default function App() {
             </div>
           )}
           {tab === 'compass' && (
-            <CompassScreen compass={compass} geo={geo} settings={settings} label={label} target={foxBearing} onSave={added} onViewMap={() => showOnMap((m) => m.fitAll())} />
+            <CompassScreen compass={compass} geo={geo} settings={settings} huntMode={mode} label={label} target={foxBearing} onSave={added} onViewMap={() => showOnMap((m) => m.fitAll())} />
           )}
           {tab === 'settings' && (
             <SettingsScreen
@@ -217,7 +243,9 @@ export default function App() {
               onSettings={setSettings}
               geo={geo}
               hunt={hunt}
-              onReplace={replaceHunt}
+              mode={mode}
+              onMode={onMode}
+              onReplace={loadHunt}
               onRename={rename}
               onClear={clear}
             />
@@ -239,6 +267,7 @@ export default function App() {
           compass={compass}
           geo={geo}
           settings={settings}
+          huntMode={mode}
           label={label}
           target={foxBearing}
           count={observations.length}
@@ -265,6 +294,7 @@ export default function App() {
           compass={compass}
           geo={geo}
           settings={settings}
+          huntMode={mode}
           label={mark.replace?.label ?? label}
           replaceId={mark.replace?.id}
           target={foxBearing}
@@ -282,6 +312,7 @@ export default function App() {
           mode="edit"
           observation={editing}
           settings={settings}
+          huntMode={mode}
           defaultLabel={label}
           geo={geo}
           compassMagnetic={compass.reading?.heading ?? null}
