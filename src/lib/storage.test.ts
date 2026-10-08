@@ -9,7 +9,7 @@ const memStore = () => {
 
 const obs: Observation = {
   id: '1', label: '=A', lat: 18.52, lon: 73.85, bearing: 62, rawBearing: 58, northRef: 'magnetic',
-  declination: 4, rssi: -54, snr: null, frequencyMHz: null, notes: 'near water tank', timestamp: 0, accuracy: 4,
+  declination: 4, rssi: -54, notes: 'near water tank', timestamp: 0, accuracy: 4,
 };
 
 describe('storage', () => {
@@ -37,24 +37,6 @@ describe('storage', () => {
 
   it('exports CSV with formula-safe labels', () => {
     const csv = huntToCSV({ ...newHunt(), observations: [obs] });
-    expect(csv.split('\n')[1].startsWith("'=A,18.5200000,73.8500000,62,58,magnetic,4,-54,,,4,")).toBe(true);
-  });
-
-  it('keeps LoRa mode in its own slot and round-trips SNR and frequency', () => {
-    const s = memStore();
-    const lora = { ...newHunt(undefined, 'lora'), observations: [{ ...obs, snr: 8.5, frequencyMHz: 433 }] };
-    saveCurrent(lora, s);
-    expect(loadCurrent(s)).toBeNull(); // Fox Hunt slot stays empty
-    expect(loadCurrent(s, 'lora')).toEqual(lora);
-    expect(parseHuntJSON(huntToJSON(lora))).toEqual(lora);
-  });
-
-  it('loads hunts saved before LoRa mode as Fox Hunt with empty LoRa fields', () => {
-    const { mode: _mode, ...legacy } = newHunt();
-    const { snr: _snr, frequencyMHz: _freq, ...oldObs } = obs;
-    const h = parseHuntJSON(JSON.stringify({ ...legacy, observations: [oldObs] }));
-    expect(h.mode).toBe('fox');
-    expect(h.observations[0].snr).toBeNull();
-    expect(h.observations[0].frequencyMHz).toBeNull();
+    expect(csv.split('\n')[1].startsWith("'=A,18.5200000,73.8500000,62,58,magnetic,4,-54,4,")).toBe(true);
   });
 });

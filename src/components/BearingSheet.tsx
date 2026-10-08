@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
-import type { HuntMode, HuntSettings, Observation } from '../types';
+import type { HuntSettings, Observation } from '../types';
 import type { GeoState } from '../hooks/useGeolocation';
 import { formatBearing, isValidLatLon, normalizeBearing, parseBearing, toTrueBearing } from '../lib/bearing';
 import { uid } from '../lib/storage';
@@ -12,7 +12,6 @@ interface Props {
   mode: SheetMode;
   observation?: Observation;
   settings: HuntSettings;
-  huntMode: HuntMode;
   defaultLabel: string;
   geo: GeoState;
   compassMagnetic: number | null;
@@ -22,7 +21,7 @@ interface Props {
 
 const TITLES: Record<SheetMode, string> = { add: 'Add observation', edit: 'Edit observation', remeasure: 'Re-measure' };
 
-export function BearingSheet({ mode, observation: o, settings, huntMode, defaultLabel, geo, compassMagnetic, onSave, onClose }: Props) {
+export function BearingSheet({ mode, observation: o, settings, defaultLabel, geo, compassMagnetic, onSave, onClose }: Props) {
   const dlg = useRef<HTMLDialogElement>(null);
   // Editing keeps the reference the bearing was entered in; new readings use the current setting.
   const ref = mode === 'edit' && o ? o.northRef : settings.northRef;
@@ -36,8 +35,6 @@ export function BearingSheet({ mode, observation: o, settings, huntMode, default
   const [bearing, setBearing] = useState(mode === 'edit' && o ? String(o.rawBearing) : '');
   const [label, setLabel] = useState(o?.label ?? defaultLabel);
   const [rssi, setRssi] = useState(o?.rssi != null ? String(o.rssi) : '');
-  const [snr, setSnr] = useState(o?.snr != null ? String(o.snr) : '');
-  const [freq, setFreq] = useState(o?.frequencyMHz != null ? String(o.frequencyMHz) : '');
   const [notes, setNotes] = useState(o?.notes ?? '');
   const [touched, setTouched] = useState(false);
 
@@ -79,13 +76,9 @@ export function BearingSheet({ mode, observation: o, settings, huntMode, default
   const posOk = lat.trim() !== '' && lon.trim() !== '' && isValidLatLon(pos);
   const rssiN = rssi.trim() === '' ? null : Number(rssi);
   const rssiOk = rssiN === null || (Number.isFinite(rssiN) && rssiN > -200 && rssiN < 100);
-  const snrN = snr.trim() === '' ? null : Number(snr);
-  const snrOk = snrN === null || (Number.isFinite(snrN) && snrN > -60 && snrN < 60);
-  const freqN = freq.trim() === '' ? null : Number(freq);
-  const freqOk = freqN === null || (Number.isFinite(freqN) && freqN >= 137 && freqN <= 1020);
   const labelOk = label.trim() !== '';
   const trueBearing = pb.ok ? toTrueBearing(pb.value, ref, decl) : null;
-  const valid = pb.ok && posOk && rssiOk && snrOk && freqOk && labelOk;
+  const valid = pb.ok && posOk && rssiOk && labelOk;
   const compassInRef =
     compassMagnetic === null ? null : ref === 'magnetic' ? compassMagnetic : normalizeBearing(compassMagnetic + settings.declination);
 
@@ -103,8 +96,6 @@ export function BearingSheet({ mode, observation: o, settings, huntMode, default
       northRef: ref,
       declination: ref === 'magnetic' ? decl : 0,
       rssi: rssiN,
-      snr: huntMode === 'lora' ? snrN : null,
-      frequencyMHz: huntMode === 'lora' ? freqN : null,
       notes: notes.trim().slice(0, 500),
       timestamp: mode === 'edit' && o ? o.timestamp : Date.now(),
       accuracy,
@@ -194,31 +185,11 @@ export function BearingSheet({ mode, observation: o, settings, huntMode, default
               </div>
             </label>
           </section>
-          {huntMode === 'lora' && (
-            <section className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="eyebrow">SNR · optional</span>
-                <div className="relative mt-1.5">
-                  <input className="field num pr-10 !text-lg" type="number" step="any" placeholder="8.5" value={snr} onChange={(e) => setSnr(e.target.value)} />
-                  <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-ink">dB</span>
-                </div>
-              </label>
-              <label className="block">
-                <span className="eyebrow">Frequency · optional</span>
-                <div className="relative mt-1.5">
-                  <input className="field num pr-12 !text-lg" type="number" step="any" placeholder="433" value={freq} onChange={(e) => setFreq(e.target.value)} />
-                  <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-ink">MHz</span>
-                </div>
-              </label>
-            </section>
-          )}
           <label className="block">
             <span className="eyebrow">Notes · optional</span>
             <textarea className="field mt-1.5 min-h-[4.5rem] py-2.5" rows={2} maxLength={500} placeholder="e.g. strong reflection off building" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </label>
           {touched && !rssiOk && <Note tone="warn">RSSI must be a number in dBm, e.g. −54.</Note>}
-          {touched && !snrOk && <Note tone="warn">SNR must be a number in dB, e.g. 8.5.</Note>}
-          {touched && !freqOk && <Note tone="warn">Frequency must be in MHz, 137–1020, e.g. 433.</Note>}
           {touched && !labelOk && <Note tone="warn">Give the point a label.</Note>}
           <Note>
             Use the Yagi bearing to determine direction. RSSI can help compare measurements but reflections and multipath can

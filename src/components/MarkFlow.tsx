@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { Fix, HuntMode, HuntSettings, Observation } from '../types';
+import type { Fix, HuntSettings, Observation } from '../types';
 import type { CompassState } from '../hooks/useCompass';
 import type { GeoState } from '../hooks/useGeolocation';
 import { cardinal, formatBearing, formatLat, formatLon, normalizeBearing, parseBearing, toTrueBearing } from '../lib/bearing';
@@ -17,7 +17,6 @@ interface Props {
   compass: CompassState;
   geo: GeoState;
   settings: HuntSettings;
-  huntMode: HuntMode;
   label: string;
   /** Re-measure keeps the existing observation's id and label. */
   replaceId?: string;
@@ -33,14 +32,12 @@ const UNAVAILABLE = new Set(['unsupported', 'no-heading', 'denied']);
  * The field loop: stand still → GPS → point phone along the Yagi → LOCK BEARING → SAVE POINT → move on.
  * The phone heading is the bearing source; manual entry only when there is no usable sensor (or the user asks).
  */
-export function MarkFlow({ variant, compass, geo, settings, huntMode, label, replaceId, target = null, onSave, onCancel, onViewMap }: Props) {
+export function MarkFlow({ variant, compass, geo, settings, label, replaceId, target = null, onSave, onCancel, onViewMap }: Props) {
   const [phase, setPhase] = useState<'aim' | 'locked' | 'saved'>('aim');
   const [locked, setLocked] = useState<Locked | null>(null);
   const [wantManual, setWantManual] = useState(false);
   const [manual, setManual] = useState('');
   const [rssi, setRssi] = useState('');
-  const [snr, setSnr] = useState('');
-  const [freq, setFreq] = useState('');
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -86,16 +83,9 @@ export function MarkFlow({ variant, compass, geo, settings, huntMode, label, rep
 
   const rssiN = rssi.trim() === '' ? null : Number(rssi);
   const rssiOk = rssiN === null || (Number.isFinite(rssiN) && rssiN > -200 && rssiN < 100);
-  const snrN = snr.trim() === '' ? null : Number(snr);
-  const snrOk = snrN === null || (Number.isFinite(snrN) && snrN > -60 && snrN < 60);
-  const freqN = freq.trim() === '' ? null : Number(freq);
-  // SX1278 covers 137–1020 MHz.
-  const freqOk = freqN === null || (Number.isFinite(freqN) && freqN >= 137 && freqN <= 1020);
 
   const save = (l: Locked) => {
     if (!rssiOk) return setErr('RSSI must be a number in dBm, e.g. −54.');
-    if (!snrOk) return setErr('SNR must be a number in dB, e.g. 8.5.');
-    if (!freqOk) return setErr('Frequency must be in MHz, 137–1020, e.g. 433.');
     onSave({
       id: replaceId ?? uid(),
       label: l.label,
@@ -106,8 +96,6 @@ export function MarkFlow({ variant, compass, geo, settings, huntMode, label, rep
       northRef: l.ref,
       declination: l.ref === 'magnetic' ? l.decl : 0,
       rssi: rssiN,
-      snr: huntMode === 'lora' ? snrN : null,
-      frequencyMHz: huntMode === 'lora' ? freqN : null,
       notes: notes.trim().slice(0, 500),
       timestamp: Date.now(),
       accuracy: l.fix.accuracy,
@@ -126,8 +114,6 @@ export function MarkFlow({ variant, compass, geo, settings, huntMode, label, rep
     setLocked(null);
     setManual('');
     setRssi('');
-    setSnr('');
-    setFreq('');
     setNotes('');
     setErr(null);
   };
@@ -176,9 +162,7 @@ export function MarkFlow({ variant, compass, geo, settings, huntMode, label, rep
           )}
         </div>
         <details className="rounded-2xl bg-raised px-4">
-          <summary className="cursor-pointer py-3 text-[15px] font-semibold text-accent">
-            {huntMode === 'lora' ? 'Add signal / notes (optional)' : 'Add RSSI / notes (optional)'}
-          </summary>
+          <summary className="cursor-pointer py-3 text-[15px] font-semibold text-accent">Add RSSI / notes (optional)</summary>
           <div className="grid gap-2 pb-3">
             <label className="block">
               <span className="eyebrow">RSSI · typed manually</span>
@@ -187,24 +171,6 @@ export function MarkFlow({ variant, compass, geo, settings, huntMode, label, rep
                 <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-ink">dBm</span>
               </div>
             </label>
-            {huntMode === 'lora' && (
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="eyebrow">SNR · typed manually</span>
-                  <div className="relative mt-1">
-                    <input className="field num pr-10 !text-lg" type="number" step="any" placeholder="8.5" value={snr} onChange={(e) => setSnr(e.target.value)} />
-                    <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-ink">dB</span>
-                  </div>
-                </label>
-                <label className="block">
-                  <span className="eyebrow">Frequency</span>
-                  <div className="relative mt-1">
-                    <input className="field num pr-12 !text-lg" type="number" step="any" placeholder="433" value={freq} onChange={(e) => setFreq(e.target.value)} />
-                    <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-ink">MHz</span>
-                  </div>
-                </label>
-              </div>
-            )}
             <label className="block">
               <span className="eyebrow">Notes</span>
               <input className="field mt-1" maxLength={500} placeholder="e.g. reflection off building" value={notes} onChange={(e) => setNotes(e.target.value)} />

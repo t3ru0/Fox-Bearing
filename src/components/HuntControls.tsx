@@ -21,21 +21,19 @@ interface Props {
 }
 
 export function HuntControls({ hunt, onReplace, onRename, onClear }: Props) {
-  // Saved hunts are shared storage; only show the ones belonging to this mode.
-  const inMode = (list: Hunt[]) => list.filter((h) => h.mode === hunt.mode);
-  const [saved, setSaved] = useState(() => inMode(listSaved()));
+  const [saved, setSaved] = useState(() => listSaved());
   const [msg, setMsg] = useState<{ text: string; warn?: boolean } | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const n = hunt.observations.length;
 
   const keepCurrent = () => {
-    if (n) setSaved(inMode(saveSnapshot(hunt)));
+    if (n) setSaved(saveSnapshot(hunt));
   };
 
   const startNew = () => {
     if (n && !confirm('Start a new hunt? The current one will be kept under Saved hunts.')) return;
     keepCurrent();
-    onReplace(newHunt(hunt.settings, hunt.mode));
+    onReplace(newHunt(hunt.settings));
     setMsg({ text: 'New hunt started.' });
   };
 
@@ -43,7 +41,7 @@ export function HuntControls({ hunt, onReplace, onRename, onClear }: Props) {
     const name = prompt('Name this hunt', hunt.name)?.trim();
     if (!name) return;
     onRename(name);
-    setSaved(inMode(saveSnapshot({ ...hunt, name })));
+    setSaved(saveSnapshot({ ...hunt, name }));
     setMsg({ text: `Saved “${name}”.` });
   };
 
@@ -116,7 +114,7 @@ export function HuntControls({ hunt, onReplace, onRename, onClear }: Props) {
                 </button>
                 <button
                   className="btn btn-ghost btn-danger"
-                  onClick={() => confirm(`Delete saved hunt “${h.name}”?`) && setSaved(inMode(deleteSaved(h.id)))}
+                  onClick={() => confirm(`Delete saved hunt “${h.name}”?`) && setSaved(deleteSaved(h.id))}
                   aria-label={`Delete ${h.name}`}
                 >
                   ✕

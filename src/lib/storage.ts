@@ -1,8 +1,7 @@
-import type { Hunt, HuntMode, HuntSettings, Observation } from '../types';
+import type { Hunt, HuntSettings, Observation } from '../types';
 
+const CURRENT_KEY = 'foxhunt.current.v1';
 const SAVED_KEY = 'foxhunt.saved.v1';
-// Fox Hunt keeps its original key so existing data is untouched; LoRa Locate has its own slot.
-const currentKey = (mode: HuntMode) => (mode === 'lora' ? 'foxhunt.lora.current.v1' : 'foxhunt.current.v1');
 
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
 const defaultStore = (): Store | undefined => (typeof localStorage !== 'undefined' ? localStorage : undefined);
@@ -14,12 +13,11 @@ export const uid = () =>
     ? crypto.randomUUID()
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-export function newHunt(settings: HuntSettings = DEFAULT_SETTINGS, mode: HuntMode = 'fox'): Hunt {
+export function newHunt(settings: HuntSettings = DEFAULT_SETTINGS): Hunt {
   const now = Date.now();
   const d = new Date(now);
   return {
     version: 1,
-    mode,
     id: uid(),
     name: `Hunt ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
     createdAt: now,
@@ -54,8 +52,6 @@ function parseObservation(o: unknown, i: number): Observation {
     northRef,
     declination: isNum(r.declination) ? r.declination : 0,
     rssi: numOrNull(r.rssi),
-    snr: numOrNull(r.snr),
-    frequencyMHz: numOrNull(r.frequencyMHz),
     notes: typeof r.notes === 'string' ? r.notes.slice(0, 500) : '',
     timestamp: isNum(r.timestamp) ? r.timestamp : Date.now(),
     accuracy: numOrNull(r.accuracy),
@@ -77,7 +73,6 @@ export function parseHunt(data: unknown): Hunt {
   const now = Date.now();
   return {
     version: 1,
-    mode: r.mode === 'lora' ? 'lora' : 'fox',
     id: typeof r.id === 'string' && r.id ? r.id : uid(),
     name: typeof r.name === 'string' && r.name ? r.name.slice(0, 80) : 'Imported hunt',
     createdAt: isNum(r.createdAt) ? r.createdAt : now,
@@ -116,8 +111,8 @@ function write(key: string, value: unknown, store: Store | undefined) {
   }
 }
 
-export function loadCurrent(store = defaultStore(), mode: HuntMode = 'fox'): Hunt | null {
-  const raw = read<unknown>(currentKey(mode), store, null);
+export function loadCurrent(store = defaultStore()): Hunt | null {
+  const raw = read<unknown>(CURRENT_KEY, store, null);
   if (!raw) return null;
   try {
     return parseHunt(raw);
@@ -126,7 +121,7 @@ export function loadCurrent(store = defaultStore(), mode: HuntMode = 'fox'): Hun
   }
 }
 
-export const saveCurrent = (h: Hunt, store = defaultStore()) => write(currentKey(h.mode), h, store);
+export const saveCurrent = (h: Hunt, store = defaultStore()) => write(CURRENT_KEY, h, store);
 
 export function listSaved(store = defaultStore()): Hunt[] {
   const raw = read<unknown[]>(SAVED_KEY, store, []);
@@ -166,11 +161,11 @@ const csvCell = (v: unknown) => {
 export function huntToCSV(h: Hunt): string {
   const head = [
     'label', 'latitude', 'longitude', 'true_bearing_deg', 'entered_bearing_deg', 'north_reference',
-    'declination_deg', 'rssi_dbm', 'snr_db', 'frequency_mhz', 'gps_accuracy_m', 'timestamp_iso', 'notes', 'id',
+    'declination_deg', 'rssi_dbm', 'gps_accuracy_m', 'timestamp_iso', 'notes', 'id',
   ];
   const rows = h.observations.map((o) => [
     o.label, o.lat.toFixed(7), o.lon.toFixed(7), o.bearing, o.rawBearing, o.northRef,
-    o.declination, o.rssi, o.snr, o.frequencyMHz, o.accuracy === null ? null : Math.round(o.accuracy * 10) / 10,
+    o.declination, o.rssi, o.accuracy === null ? null : Math.round(o.accuracy * 10) / 10,
     new Date(o.timestamp).toISOString(), o.notes, o.id,
   ]);
   return [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';

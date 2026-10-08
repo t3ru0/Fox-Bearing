@@ -43,7 +43,6 @@ export function ObservationList({ observations, residuals, newestId, onShow, onE
                     <span className="mt-1 block text-[13px] text-ink">
                       {cardinal(o.bearing)} · GPS {o.accuracy === null ? 'manual' : `±${Math.round(o.accuracy)} m`}
                       {o.rssi !== null && ` · ${o.rssi} dBm`}
-                      {o.snr !== null && ` · SNR ${o.snr} dB`}
                     </span>
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -85,12 +84,6 @@ export function ObservationList({ observations, residuals, newestId, onShow, onE
                         <dt className="eyebrow">Signal · manual</dt>
                         <dd className="mt-0.5">{o.rssi === null ? <span className="num">—</span> : <SignalBar rssi={o.rssi} />}</dd>
                       </div>
-                      {o.frequencyMHz !== null && (
-                        <div>
-                          <dt className="eyebrow">Frequency</dt>
-                          <dd className="num text-[15px]">{o.frequencyMHz} MHz</dd>
-                        </div>
-                      )}
                       {o.notes && (
                         <div className="col-span-2">
                           <dt className="eyebrow">Notes</dt>
